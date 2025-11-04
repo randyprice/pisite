@@ -1,0 +1,8 @@
+**/__pycache__
+**/.venv
+**/.gitignore
+**/.python-version
+**/.vscode
+**/node_modules
+compose.yaml
+Containerfile

@@ -1,0 +1,37 @@
+const token = document.querySelector('meta[name="token"]').content;
+
+const leds_checkbox = document.getElementById('leds-switch');
+const leds = document.getElementById('leds');
+leds_checkbox.addEventListener('change', () => {
+    fetch('/toggle/leds', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Token': token,
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        leds.className = 'leds ' + (data.leds_on ? 'on' : 'off');
+        leds_checkbox.checked = data.leds_on;
+    })
+    .catch(err => console.error('Error toggling LEDs: ', err));
+});
+
+const fan_checkbox = document.getElementById('fan-switch');
+const fan = document.getElementById('fan');
+fan_checkbox.addEventListener('change', () => {
+    fetch('/toggle/fan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Token': token,
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        fan.className = 'fan ' + (data.fan_on ? 'on' : 'off');
+        fan_checkbox.checked = data.fan_on;
+    })
+    .catch(err => console.error('Error toggling fan: ', err));
+});

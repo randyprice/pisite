@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hardware Control</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='switch.css') }}">
+</head>
+<body>
+  <div class="leds-container">
+    <div class="leds-label">LEDs</div>
+    <div id="leds" class="leds {{ 'on' if leds_on else 'off' }}"></div>
+     <label class="switch">
+      <input type="checkbox" id="leds-switch" {{ 'checked' if leds_on else '' }}>
+      <span class="slider round"></span>
+    </label>
+  </div>
+  <div class="fan-container">
+    <div class="fan-label">fan</div>
+    <div id="fan" class="fan {{ 'on' if fan_on else 'off' }}"></div>
+     <label class="switch">
+      <input type="checkbox" id="fan-switch" {{ 'checked' if fan_on else '' }}>
+      <span class="slider round"></span>
+    </label>
+  </div>
+   <meta name="token" content="{{ token }}">
+  <script src="{{ url_for('static', filename='pisite.js') }}"></script>
+</body>
+</html>
