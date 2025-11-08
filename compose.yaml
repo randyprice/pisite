@@ -17,24 +17,13 @@ services:
       "1",
       "-b",
       "${INTERFACE:?error}",
-      "pisite.app:create_app('/pisite/gpio.json', '${MONITOR_FILE:?error}')"
+      "pisite.app:create_app('/pisite/config.toml', '${MONITOR_FILE:?error}', '${GPIO_DEVICE:?error}')"
     ]
     volumes:
       # FIXME change to a `config` when available in podman compose.
-      - ./configs/gpio.json:/pisite/gpio.json:ro
+      - ./configs/config.toml:/pisite/config.toml:ro
       - monitor:/${MONITOR_VOLUME:?error}
       - /sys/class/thermal/thermal_zone0/temp:/sys/class/thermal/thermal_zone0/temp
-      # - fan-reader:${FAN_READER_VOLUME:?error}
-  # fan-reader:
-  #   image: localhost/pisite/fan-reader:test
-  #   build:
-  #     context: ./services/fan-reader
-  #     dockerfile: Containerfile
-  #   command: ["uv", "run", "fan_reader.py", "${FAN_RPM_FILE:?error}"]
-  #   devices:
-  #     - "${GPIO_DEVICE:?error}:${GPIO_DEVICE:?error}"
-  #   volumes:
-  #     - fan-reader:${FAN_READER_VOLUME:?error}
   monitor:
     image: localhost/pisite/monitor:test
     build:
@@ -74,5 +63,4 @@ secrets:
     file: ./secrets/raspberrypi.key
 
 volumes:
-#   fan-reader:
   monitor:

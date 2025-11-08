@@ -1,0 +1,6 @@
+# Flask needs everything in UPPERCASE. Default settings use SNAKE_CASE; let's do that here too.
+SERVICES = [ "yapper", "yoinker" ]
+
+[GPIO_PINS]
+LED_CONTROL = 17
+FAN_CONTROL = 27

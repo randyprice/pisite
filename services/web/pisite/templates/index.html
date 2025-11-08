@@ -10,7 +10,6 @@
   <h1>Hardware Control</h1>
   <div class="leds-container">
     <div class="leds-label">LEDs</div>
-    <div id="leds" class="leds {{ 'on' if leds_on else 'off' }}"></div>
      <label class="switch">
       <input type="checkbox" id="leds-switch" {{ 'checked' if leds_on else '' }}>
       <span class="slider round"></span>
@@ -18,15 +17,16 @@
   </div>
   <div class="fan-container">
     <div class="fan-label">Fan</div>
-    <div id="fan" class="fan {{ 'on' if fan_on else 'off' }}"></div>
      <label class="switch">
       <input type="checkbox" id="fan-switch" {{ 'checked' if fan_on else '' }}>
       <span class="slider round"></span>
     </label>
   </div>
-  <!-- <div id="fan-status">
-    Fan Speed: le epic fail <span id="fan-rpm">—</span>
-  </div> -->
+  <!-- FIXME do somehting better than br -->
+  <br>
+  <a href="{{ url_for('static', filename='images/circuit.png') }}" target="_blank">
+    control circuit diagram
+  </a>
   <h1>Services</h1>
   <table id="service-statuses">
     <thead>
@@ -42,8 +42,6 @@
   <div>
     CPU Temperature: <span id="cpu-temperature"></span>
   </div>
-
-
   <meta name="token" content="{{ token }}">
   <script src="{{ url_for('static', filename='pisite.js') }}"></script>
 </body>

@@ -1,5 +1,0 @@
-{
-    "power_led_control_pin": 23,
-    "io_led_control_pin": 24,
-    "fan_control_pin": 0
-}

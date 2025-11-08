@@ -1,42 +1,36 @@
 import json
 import logging
 import secrets
-from dataclasses import dataclass
+import tomllib
+from functools import wraps
+from http import HTTPStatus
 from pathlib import Path
-from typing import Self
+from typing import Callable, Self
 
 from flask import current_app, request, Blueprint, Flask, jsonify, render_template
 
 from pisite import control
 
-_logger = logging.getLogger()
-
-@dataclass
-class GpioConfig:
-    power_led_control_pin: int
-    io_led_control_pin: int
-    fan_control_pin: int
-
-    @staticmethod
-    def from_json(config_path: str) -> Self:
-        with open(config_path) as file:
-            data = json.load(file)
-        return GpioConfig(**data)
-
-    def led_control_pins(self) -> set[int]:
-        return {self.power_led_control_pin, self.io_led_control_pin}
-
 class MyApp(Flask):
-    def __init__(self, import_name: str, config_path: str, monitor_file: str, *args, **kwargs):
+    def __init__(self, import_name: str, *args, **kwargs) -> Self:
         super().__init__(import_name, *args, **kwargs)
-        self.gpio_config = GpioConfig.from_json(config_path)
+        # States of fan and LEDs (active/inactive, i.e. on/off).
         self.control_state = control.State()
+        # Secret token for internal requests.
         self.token = secrets.token_hex(16)
-        self.monitor_path = Path(monitor_file)
-
 
 # App.
 admin = Blueprint('admin', __name__)
+
+# Decorator for methods that should only be called by the application
+# itself, which is validated by the use of the application's token.
+def requires_internal_token(function: Callable) -> Callable:
+    @wraps(function)
+    def decoratorated_function(*args, **kwargs):
+        if request.headers.get('X-Token') != current_app.token:
+            return jsonify({'error': 'invalid token'}), HTTPStatus.FORBIDDEN
+        return function(*args, **kwargs)
+    return decoratorated_function
 
 @admin.route('/')
 def index():
@@ -48,12 +42,11 @@ def index():
     )
 
 @admin.route('/toggle/leds', methods=['POST'])
+@requires_internal_token
 def toggle_leds():
-    token = request.headers.get('X-Token')
-    if token != current_app.token:
-        return jsonify({'error': 'invalid token'}), 403
-    control.toggle_pins(
-        current_app.gpio_config.led_control_pins(),
+    control.toggle_pin(
+        current_app.config['GPIO_DEVICE'],
+        current_app.config['GPIO_PINS']['LED_CONTROL'],
         current_app.control_state.leds,
     )
     current_app.control_state.leds = control.toggle_value(current_app.control_state.leds)
@@ -61,20 +54,19 @@ def toggle_leds():
     return jsonify({'leds_on': bool(current_app.control_state.leds)})
 
 @admin.route('/toggle/fan', methods=['POST'])
+@requires_internal_token
 def toggle_fan():
-    token = request.headers.get('X-Token')
-    if token != current_app.token:
-        return jsonify({'error': 'invalid token'}), 403
-    control.toggle_pins(
-        {current_app.gpio_config.fan_control_pin},
+    control.toggle_pin(
+        current_app.config['GPIO_DEVICE'],
+        current_app.config['GPIO_PINS']['FAN_CONTROL'],
         current_app.control_state.fan,
     )
     current_app.control_state.fan = control.toggle_value(current_app.control_state.fan)
     current_app.logger.info(f'fan set to {current_app.control_state.fan.name}')
     return jsonify({'fan_on': bool(current_app.control_state.fan)})
 
-def _parse_monitor_file(monitor_file: Path, service_names: set[str]) -> dict:
-    with monitor_file.open() as file:
+def _parse_monitor_file(monitor_file: str, service_names: set[str]) -> dict:
+    with open(monitor_file) as file:
         container_statuses = json.load(file)
     parsed_data = []
     for service_name in service_names:
@@ -98,24 +90,22 @@ def _parse_monitor_file(monitor_file: Path, service_names: set[str]) -> dict:
 
     return parsed_data
 
-
 @admin.route('/service-monitor/update', methods=['POST'])
+@requires_internal_token
 def update_service_monitor():
-    token = request.headers.get('X-Token')
-    if token != current_app.token:
-        return jsonify({'error': 'invalid token'}), 403
     try:
         # FIXME sanitize service names!!!!
-        service_statuses = _parse_monitor_file(current_app.monitor_path, {'yapper', 'yoinker'})
+        service_statuses = _parse_monitor_file(
+            current_app.config['SERVICE_MONITOR_FILE'],
+            current_app.config['SERVICES'],
+         )
     except FileNotFoundError, ValueError:
         service_statuses = []
     return jsonify(service_statuses)
 
 @admin.route('/metrics/update', methods=['POST'])
+@requires_internal_token
 def update_metrics():
-    token = request.headers.get('X-Token')
-    if token != current_app.token:
-        return jsonify({'error': 'invalid token'}), 403
     try:
         temperature_c = (
             int(Path('/sys/class/thermal/thermal_zone0/temp').read_text())
@@ -127,17 +117,24 @@ def update_metrics():
 
 
 
-def create_app(config_file: str, monitor_file: str) -> MyApp:
+def create_app(config_file: str, service_monitor_file: str, gpio_device: str) -> MyApp:
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
-    app = MyApp(__name__, config_file, monitor_file)
-    app.register_blueprint(admin)
+    app = MyApp(__name__)
     app.logger.setLevel(logging.INFO)
-    # Turn everything on!
-    control.activate_pins({
-        app.gpio_config.power_led_control_pin,
-        app.gpio_config.io_led_control_pin,
-        app.gpio_config.fan_control_pin,
+    app.config.from_file(config_file, load=tomllib.load, text=False)
+    app.config.update({
+        'SERVICE_MONITOR_FILE': service_monitor_file,
+        'GPIO_DEVICE': gpio_device,
     })
+    app.register_blueprint(admin)
+    # Turn everything on!
+    control.activate_pins(
+        app.config['GPIO_DEVICE'],
+        {
+            app.config['GPIO_PINS']['LED_CONTROL'],
+            app.config['GPIO_PINS']['FAN_CONTROL'],
+        }
+    )
 
     return app
 

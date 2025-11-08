@@ -1,7 +1,6 @@
 const token = document.querySelector('meta[name="token"]').content;
 
 const leds_checkbox = document.getElementById('leds-switch');
-const leds = document.getElementById('leds');
 leds_checkbox.addEventListener('change', () => {
     fetch('/toggle/leds', {
         method: 'POST',
@@ -12,14 +11,12 @@ leds_checkbox.addEventListener('change', () => {
     })
     .then(res => res.json())
     .then(data => {
-        leds.className = 'leds ' + (data.leds_on ? 'on' : 'off');
         leds_checkbox.checked = data.leds_on;
     })
     .catch(err => console.error('Error toggling LEDs: ', err));
 });
 
 const fan_checkbox = document.getElementById('fan-switch');
-const fan = document.getElementById('fan');
 fan_checkbox.addEventListener('change', () => {
     fetch('/toggle/fan', {
         method: 'POST',
@@ -30,15 +27,14 @@ fan_checkbox.addEventListener('change', () => {
     })
     .then(res => res.json())
     .then(data => {
-        fan.className = 'fan ' + (data.fan_on ? 'on' : 'off');
         fan_checkbox.checked = data.fan_on;
     })
     .catch(err => console.error('Error toggling fan: ', err));
 });
 
-const fanRpmElem = document.getElementById('cpu-temperature');  // assumes <span id="fan-rpm"></span> in HTML
+const metrics = document.getElementById('cpu-temperature');
 
-function updateFanRpm() {
+function updateMetrics() {
     fetch('/metrics/update', {
         method: 'POST',
         headers: {
@@ -49,23 +45,20 @@ function updateFanRpm() {
     .then(res => res.json())
     .then(data => {
         if (data.temperature !== null && data.temperature !== undefined) {
-            fanRpmElem.textContent = data.temperature.toFixed(2) + ' C';
+            metrics.textContent = data.temperature.toFixed(2) + ' C';
         } else {
-            fanRpmElem.textContent = '—';
+            metrics.textContent = '—';
         }
     })
     .catch(err => {
         console.error('Error reading CPU temp:', err);
-        fanRpmElem.textContent = 'Error';
+        metrics.textContent = 'Error';
     });
 }
-
-// poll every second
-setInterval(updateFanRpm, 1000);
-updateFanRpm();
+setInterval(updateMetrics, 1000);
+updateMetrics();
 
 const serviceStatuses = document.getElementById('service-statuses').querySelector('tbody');
-
 function updateServiceMonitor() {
     fetch('/service-monitor/update', {
         method: 'POST',
@@ -113,7 +106,5 @@ function updateServiceMonitor() {
         serviceStatuses.textContent = 'Error';
     });
 }
-
-// poll every second
 setInterval(updateServiceMonitor, 5 * 60 * 1000);
 updateServiceMonitor();
