@@ -1,0 +1,2 @@
+FROM docker.io/library/debian:trixie-slim
+COPY run.sh .

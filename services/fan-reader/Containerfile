@@ -1,0 +1,8 @@
+FROM alpine:3.22.2 AS runner
+# Set up Python environment.
+WORKDIR /fan-reader
+COPY --from=ghcr.io/astral-sh/uv:0.9.5 /uv /uvx /bin/
+COPY pyproject.toml .
+RUN uv sync
+COPY fan_reader.py .
+RUN touch fan-rpm.txt
