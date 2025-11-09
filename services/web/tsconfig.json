@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "es6",
     "module": "none",
-    "rootDir": "./src",
-    "outDir": "./static",
+    "rootDir": "./ts",
+    "outDir": "./dist",
     "strict": true,
     "sourceMap": true
   }

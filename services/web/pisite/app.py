@@ -41,6 +41,7 @@ def index():
         token=current_app.token,
     )
 
+# TODO combine these two functions.
 @admin.route('/toggle/leds', methods=['POST'])
 @requires_internal_token
 def toggle_leds():
@@ -51,7 +52,7 @@ def toggle_leds():
     )
     current_app.control_state.leds = control.toggle_value(current_app.control_state.leds)
     current_app.logger.info(f'LEDs set to {current_app.control_state.leds.name}')
-    return jsonify({'leds_on': bool(current_app.control_state.leds)})
+    return jsonify({'on': bool(current_app.control_state.leds)})
 
 @admin.route('/toggle/fan', methods=['POST'])
 @requires_internal_token
@@ -63,7 +64,7 @@ def toggle_fan():
     )
     current_app.control_state.fan = control.toggle_value(current_app.control_state.fan)
     current_app.logger.info(f'fan set to {current_app.control_state.fan.name}')
-    return jsonify({'fan_on': bool(current_app.control_state.fan)})
+    return jsonify({'on': bool(current_app.control_state.fan)})
 
 def _parse_monitor_file(monitor_file: str, service_names: set[str]) -> dict:
     with open(monitor_file) as file:
