@@ -36,11 +36,13 @@ def requires_internal_token(function: Callable) -> Callable:
 def index():
     return render_template(
         'index.html',
+        debug_mode=current_app.debug,
         leds_on=bool(current_app.control_state.leds),
         fan_on=bool(current_app.control_state.fan),
         token=current_app.token,
     )
 
+# TODO combine these two functions.
 @admin.route('/toggle/leds', methods=['POST'])
 @requires_internal_token
 def toggle_leds():
@@ -51,7 +53,7 @@ def toggle_leds():
     )
     current_app.control_state.leds = control.toggle_value(current_app.control_state.leds)
     current_app.logger.info(f'LEDs set to {current_app.control_state.leds.name}')
-    return jsonify({'leds_on': bool(current_app.control_state.leds)})
+    return jsonify({'on': bool(current_app.control_state.leds)})
 
 @admin.route('/toggle/fan', methods=['POST'])
 @requires_internal_token
@@ -63,9 +65,9 @@ def toggle_fan():
     )
     current_app.control_state.fan = control.toggle_value(current_app.control_state.fan)
     current_app.logger.info(f'fan set to {current_app.control_state.fan.name}')
-    return jsonify({'fan_on': bool(current_app.control_state.fan)})
+    return jsonify({'on': bool(current_app.control_state.fan)})
 
-def _parse_monitor_file(monitor_file: str, service_names: set[str]) -> dict:
+def _parse_monitor_file(monitor_file: str, service_names: set[str]) -> list[dict]:
     with open(monitor_file) as file:
         container_statuses = json.load(file)
     parsed_data = []
@@ -93,6 +95,32 @@ def _parse_monitor_file(monitor_file: str, service_names: set[str]) -> dict:
 @admin.route('/service-monitor/update', methods=['POST'])
 @requires_internal_token
 def update_service_monitor():
+    # FIXME move this logic to the client.
+    if current_app.debug:
+        service_statuses = [
+            {
+                'service_name': 'debug',
+                'service_status': {
+                    'State': 'running',
+                    'Status': 'Up 67 hours',
+                },
+            },
+            {
+                'service_name': 'debussy',
+                'service_status': {
+                    'State': 'stopped',
+                    'Status': 'down bad :('
+                }
+            },
+            {
+                'service_name': 'debutts',
+                'service_status': {
+                    'State': 'omgwtf',
+                    'Status': 'Up your butt',
+                }
+            },
+        ]
+        return jsonify(service_statuses)
     try:
         # FIXME sanitize service names!!!!
         service_statuses = _parse_monitor_file(
@@ -116,15 +144,20 @@ def update_metrics():
     return jsonify({'temperature': temperature_c})
 
 
-
-def create_app(config_file: str, service_monitor_file: str, gpio_device: str) -> MyApp:
+def create_app(
+        config_file: str,
+        gpio_device: str,
+        service_monitor_file: str,
+        cpu_temperature_file: str
+        ) -> MyApp:
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
     app = MyApp(__name__)
     app.logger.setLevel(logging.INFO)
     app.config.from_file(config_file, load=tomllib.load, text=False)
     app.config.update({
-        'SERVICE_MONITOR_FILE': service_monitor_file,
         'GPIO_DEVICE': gpio_device,
+        'SERVICE_MONITOR_FILE': service_monitor_file,
+        'CPU_TEMPERATURE_FILE': cpu_temperature_file,
     })
     app.register_blueprint(admin)
     # Turn everything on!
@@ -135,7 +168,6 @@ def create_app(config_file: str, service_monitor_file: str, gpio_device: str) ->
             app.config['GPIO_PINS']['FAN_CONTROL'],
         }
     )
-
     return app
 
 if __name__ == '__main__':

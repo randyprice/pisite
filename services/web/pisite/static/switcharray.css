@@ -1,0 +1,17 @@
+.switch-array {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.switch-label {
+  min-width: 80px;
+  color: var(--text-color);
+}

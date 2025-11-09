@@ -1,0 +1,35 @@
+:root {
+    --first-color: #081f37;
+    --second-color: #5fc9f3;
+    --third-color: #2e79ba;
+    --fourth-color: #1e549f;
+
+    --background-color: var(--first-color);
+    --text-color: var(--fourth-color);
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-family: 'Inter', 'sans-serif';
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--second-color);       /* text color */
+}
+
+.table-striped>thead {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+.table-striped>tbody>tr:nth-child(odd)>td,
+.table-striped>tbody>tr:nth-child(odd)>th {
+    background-color: var(--background-color);
+    color: var(--text-color);
+ }
+
+.table-striped>tbody>tr:nth-child(even)>td,
+.table-striped>tbody>tr:nth-child(even)>th {
+    background-color: var(--background-color);
+    color: var(--text-color);
+ }
